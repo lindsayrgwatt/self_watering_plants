@@ -19,7 +19,6 @@ moisture_level = -1.0
 water_flow_counter = 0
 
 # State variables
-first_loop = True
 out_of_water = False
 pump_on = False
 debug = False
@@ -84,11 +83,7 @@ def update_screen(variables=None):
 
 # Main program loop
 while True:
-    #TODO - does this need a delay? Does that affect the interrupts at all?
-    if first_loop:
-        # assign an interrupt to change the desired moisture level
-        first_loop = False
-
+    # TODO - write a function to poll the buttons for a touch
     if out_of_water:
         update_screen()
     else:
