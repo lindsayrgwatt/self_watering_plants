@@ -15,12 +15,14 @@ DELAY = 1
 DELTA = 1
 
 desired_moisture_level = 0.25
+moisture_level = -1.0
 water_flow_counter = 0
 
 # State variables
 first_loop = True
 out_of_water = False
 pump_on = False
+debug = False
 
 # Set up pins
 adc = ADC(Pin.board.Y12)
@@ -28,9 +30,12 @@ lcd = LCD('X')
 water_monitor = Pin('Y1', Pin.IN)
 pump = Pin('Y2', Pin.Out)
 
+lcd.light(True)
+
+# Interrupt callbacks
 def water_incrementer(p):
     water_flow_counter += 1
-water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
+    water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
 
 # Helper functions
 def calculate_moisture_level(input_level):
@@ -58,18 +63,39 @@ def check_for_water():
         stop_pump()
     water_flow_counter = 0
 
+def update_screen(variables=None):
+    lcd.fill(0)
+    if debug:
+        lcd.text("Debug",0,0,1) # Doesn’t support newline characters
+        lcd.text("Debug",0,10,1)
+        lcd.text("Debug",0,20,1)
+    elif out_of_water:
+        lcd.text("Out Of Water",0,0,1) # Doesn’t support newline characters
+        lcd.text("Fill Tank",0,10,1)
+        lcd.text("Then Push Button",0,20,1)
+    else:
+        lcd.text("Soil moisture",0,0,1) # Doesn’t support newline characters
+        second_line = "Desired: %2.f%" % variables[0]
+        lcd.text(second_line,0,10,1)
+        third_line = "Actual: %2.f%" % variables[1]
+        lcd.text(third_line,0,20,1)
+    lcd.show()
 
+
+# Main program loop
 while True:
-    # if first loop, set up the LCD screen
-    # assign an interrupt to change the desired moisture level
+    #TODO - does this need a delay? Does that affect the interrupts at all?
+    if first_loop:
+        # assign an interrupt to change the desired moisture level
+        first_loop = False
 
     if out_of_water:
-        # if out of water, set up the LCD screen to read that water is needed
-        # assign an interrupt to prompt the system that water is back
-        print("Out of water")
+        update_screen()
     else:
         raw_moisture_value = adc.read()
         moisture_level = calculate_moisture_level(raw_moisture_value)
+
+        update_screen([desired_moisture_level, moisture_level])
 
         if moisture_level <= desired_moisture_level and not pump_on:
             start_pump()

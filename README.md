@@ -7,7 +7,8 @@ Goal is to create a self-watering plant system with following characteristics:
 3. If soil moisture drops below user's threshold, system will pump water
 4. If water runs out before moisture level reached, turn off the pump and let the user know that the pump is out of water
 5. After the user adds water, let them push a button to return to normal
-6. Simple, legible and maintainable code
+6. Debug mode to understand value of different variables
+7. Simple, legible and maintainable code (vs. optimized for speed, brevity, etc.)
 
 Out of scope:
 
