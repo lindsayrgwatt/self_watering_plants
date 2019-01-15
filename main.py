@@ -6,13 +6,17 @@
 #4. If water runs out before moisture level reached, turn off the pump and let the user know that the pump is out of water
 #5. After the user adds water, let them push a button to return to normal
 import time
-from pyb import ADB, LCD, Pin
+from pyb import ADB, I2C, LCD, Pin
+from mpr121 import MPR121
 
 # Following values were obtained by experimenting with the moisture sensor
 DRY_DIRT = 3163
 SOAKING_DIRT = 1630
 DELAY = 1
 DELTA = 1
+INCREMENT = 0.05
+MAX_MOISTURE = 1.0
+MIN_MOISTURE = 0.0
 
 desired_moisture_level = 0.25
 moisture_level = -1.0
@@ -30,6 +34,7 @@ water_monitor = Pin('Y1', Pin.IN)
 pump = Pin('Y2', Pin.Out)
 
 lcd.light(True)
+capacitive_buttons = mpr121.MPR121(I2C(1, I2C.MASTER))
 
 # Interrupt callbacks
 def water_incrementer(p):
@@ -37,6 +42,22 @@ def water_incrementer(p):
     water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
 
 # Helper functions
+def poll_buttons():
+    input = capacitive_buttons.touch_status()
+    # Y == 1, X == 2, B == 4, A == 8; sum of two or more means multitouch
+    if out_of_water and input in [1,2,4,8,3,5,9,6,10,12]:
+        out_of_water = False
+    else:
+        if input in [1, 4, 5]:
+            desired_moisture_level += INCREMENT
+            if desired_moisture_level > MAX_MOISTURE:
+                desired_moisture_level = MAX_MOISTURE
+        elif input in [2, 8, 10]:
+            desired_moisture_level -= INCREMENT
+            if desired_moisture_level < MIN_MOISTURE:
+                desired_moisture_level = MIN_MOISTURE
+
+
 def calculate_moisture_level(input_level):
     numerator = input_level - SOAKING_DIRT
     denominator = DRY_DIRT - SOAKING_DIRT
@@ -83,7 +104,8 @@ def update_screen(variables=None):
 
 # Main program loop
 while True:
-    # TODO - write a function to poll the buttons for a touch
+    poll_buttons()
+
     if out_of_water:
         update_screen()
     else:
