@@ -1,17 +1,10 @@
-#Goal is to create a self-watering plant system with following characteristics:
-#
-#1. User can set the desired moisture level in soil and alter it as desired
-#2. System will monitor moisture level in soil
-#3. If soil moisture drops below user's threshold, system will pump water
-#4. If water runs out before moisture level reached, turn off the pump and let the user know that the pump is out of water
-#5. After the user adds water, let them push a button to return to normal
 import time
 from pyb import ADB, I2C, LCD, Pin
 from mpr121 import MPR121
 
 # Following values were obtained by experimenting with the moisture sensor
-DRY_DIRT = 3163
-SOAKING_DIRT = 1630
+DRY_DIRT = 3163 # Determined by experimenting with the moisture sensor
+SOAKING_DIRT = 1630 # Determined by experimenting with the moisture sensor
 DELAY = 1
 DELTA = 1
 INCREMENT = 0.05
@@ -31,15 +24,16 @@ debug = False
 adc = ADC(Pin.board.Y12)
 lcd = LCD('X')
 water_monitor = Pin('Y1', Pin.IN)
-pump = Pin('Y2', Pin.Out)
+pump = Pin('Y2', Pin.OUT)
 
 lcd.light(True)
-capacitive_buttons = mpr121.MPR121(I2C(1, I2C.MASTER))
+capacitive_buttons = MPR121(I2C(1, I2C.MASTER))
 
 # Interrupt callbacks
 def water_incrementer(p):
     water_flow_counter += 1
-    water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
+
+water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
 
 # Helper functions
 def poll_buttons():
@@ -86,13 +80,16 @@ def check_for_water():
 def update_screen(variables=None):
     lcd.fill(0)
     if debug:
-        lcd.text("Debug",0,0,1) # Doesn’t support newline characters
-        lcd.text("Debug",0,10,1)
-        lcd.text("Debug",0,20,1)
+        first_line = "%.2f | %.2f | %d" % (desired_moisture_level, moisture_level, water_flow_counter)
+        lcd.text(first_line,0,0,1) # Doesn’t support newline characters
+        second_line = "%s | %s | %s" % (out_of_water, pump_on, debug)
+        lcd.text(second_line,0,10,1)
+        third_line = "%d | %d" % (capacitive_buttons.touch_status(), adc.read())
+        lcd.text(third_line,0,20,1)
     elif out_of_water:
         lcd.text("Out Of Water",0,0,1) # Doesn’t support newline characters
         lcd.text("Fill Tank",0,10,1)
-        lcd.text("Then Push Button",0,20,1)
+        lcd.text("Then Hold Any Button",0,20,1)
     else:
         lcd.text("Soil moisture",0,0,1) # Doesn’t support newline characters
         second_line = "Desired: %2.f%" % variables[0]
@@ -112,7 +109,10 @@ while True:
         raw_moisture_value = adc.read()
         moisture_level = calculate_moisture_level(raw_moisture_value)
 
-        update_screen([desired_moisture_level, moisture_level])
+        if debug:
+            update_screen()
+        else:
+            update_screen([desired_moisture_level, moisture_level])
 
         if moisture_level <= desired_moisture_level and not pump_on:
             start_pump()
