@@ -1,5 +1,5 @@
 import time
-from pyb import ADB, I2C, LCD, Pin
+from pyb import ADC, I2C, LCD, Pin
 from mpr121 import MPR121
 
 # Following values were obtained by experimenting with the moisture sensor
@@ -18,7 +18,7 @@ water_flow_counter = 0
 # State variables
 out_of_water = False
 pump_on = False
-debug = False
+debug = True
 
 # Set up pins
 adc = ADC(Pin.board.Y12)
@@ -36,7 +36,7 @@ def water_incrementer(p):
 water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
 
 # Helper functions
-def poll_buttons():
+def poll_buttons(out_of_water, desired_moisture_level):
     input = capacitive_buttons.touch_status()
     # Y == 1, X == 2, B == 4, A == 8; sum of two or more means multitouch
     if out_of_water and input in [1,2,4,8,3,5,9,6,10,12]:
@@ -92,16 +92,16 @@ def update_screen(variables=None):
         lcd.text("Then Hold Any Button",0,20,1)
     else:
         lcd.text("Soil moisture",0,0,1) # Doesn’t support newline characters
-        second_line = "Desired: %2.f%" % variables[0]
+        second_line = "Desired: % 1.2f%%" % variables[0]
         lcd.text(second_line,0,10,1)
-        third_line = "Actual: %2.f%" % variables[1]
+        third_line = "Actual: % 1.2f%%" % variables[1]
         lcd.text(third_line,0,20,1)
     lcd.show()
 
 
 # Main program loop
 while True:
-    poll_buttons()
+    poll_buttons(out_of_water, desired_moisture_level)
 
     if out_of_water:
         update_screen()
