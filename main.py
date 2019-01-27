@@ -31,12 +31,15 @@ capacitive_buttons = MPR121(I2C(1, I2C.MASTER))
 
 # Interrupt callbacks
 def water_incrementer(p):
+    global water_flow_counter
     water_flow_counter += 1
 
 water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
 
 # Helper functions
-def poll_buttons(out_of_water, desired_moisture_level):
+def poll_buttons():
+    global out_of_water
+    global desired_moisture_level
     input = capacitive_buttons.touch_status()
     # Y == 1, X == 2, B == 4, A == 8; sum of two or more means multitouch
     if out_of_water and input in [1,2,4,8,3,5,9,6,10,12]:
@@ -61,14 +64,18 @@ def calculate_moisture_level(input_level):
     return level
 
 def start_pump():
+    global pump_on
     pump_on = True
     pump.value(1)
 
 def stop_pump():
+    global pump_on
     pump.value(0)
     pump_on = False
 
 def check_for_water():
+    global out_of_water
+    global water_flow_counter
     original_water_level = water_flow_counter
     time.sleep(DELAY)
     new_water_level = water_flow_counter
@@ -82,7 +89,15 @@ def update_screen(variables=None):
     if debug:
         first_line = "%.2f | %.2f | %d" % (desired_moisture_level, moisture_level, water_flow_counter)
         lcd.text(first_line,0,0,1) # Doesn’t support newline characters
-        second_line = "%s | %s | %s" % (out_of_water, pump_on, debug)
+        second_line = ""
+        if out_of_water:
+            second_line += "OOW | "
+        else:
+            second_line += "W | "
+        if pump_on:
+            second_line += "ON"
+        else:
+            second_line += "OFF"
         lcd.text(second_line,0,10,1)
         third_line = "%d | %d" % (capacitive_buttons.touch_status(), adc.read())
         lcd.text(third_line,0,20,1)
@@ -101,7 +116,7 @@ def update_screen(variables=None):
 
 # Main program loop
 while True:
-    poll_buttons(out_of_water, desired_moisture_level)
+    poll_buttons()
 
     if out_of_water:
         update_screen()
@@ -116,6 +131,8 @@ while True:
 
         if moisture_level <= desired_moisture_level and not pump_on:
             start_pump()
+            #pump_on = True
+            #pump.value(1)
         elif moisture_level <= desired_moisture_level and pump_on:
             check_for_water()
         elif moisture_level > desired_moisture_level and pump_on:
