@@ -21,7 +21,7 @@ pump_on = False
 debug = True
 
 # Set up pins
-adc = ADC(Pin.board.Y12)
+adc = ADC(Pin.board.Y12) # Moisuture sensor used ADC to get value
 lcd = LCD('X')
 water_monitor = Pin('Y1', Pin.IN)
 pump = Pin('Y2', Pin.OUT)
@@ -57,8 +57,8 @@ def right_button_pushed(p):
         out_of_water = False
     else:
         desired_moisture_level += INCREMENT
-        if desired_moisture_level > MIN_MOISTURE:
-            desired_moisture_level = MIN_MOISTURE
+        if desired_moisture_level > MAX_MOISTURE:
+            desired_moisture_level = MAX_MOISTURE
 
 
 water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
@@ -128,7 +128,7 @@ def update_screen(variables=None):
         else:
             second_line += "P OFF"
         lcd.text(second_line,0,10,1)
-        third_line = "%d | %d" % (capacitive_buttons.touch_status(), adc.read())
+        third_line = "%d" % adc.read()
         lcd.text(third_line,0,20,1)
     elif out_of_water:
         lcd.text("Out Of Water",0,0,1) # Doesn’t support newline characters
