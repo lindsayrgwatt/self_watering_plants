@@ -9,10 +9,18 @@ DELTA = 1
 INCREMENT = 0.05
 MAX_MOISTURE = 1.0
 MIN_MOISTURE = 0.0
+FILE_NAME = 'data.txt'
 
 desired_moisture_level = 0.25
 moisture_level = -1.0
 water_flow_counter = 0
+
+try:
+    f = open(FILE_NAME, 'r')
+    desired_moisture_level = float(f.read()[0:4])
+    f.close()
+except OSError:
+    print('No file to open')
 
 # State variables
 out_of_water = False
@@ -44,6 +52,8 @@ def left_button_pushed(p):
         if desired_moisture_level < MIN_MOISTURE:
             desired_moisture_level = MIN_MOISTURE
 
+        write_moisture_level(desired_moisture_level)
+
 def right_button_pushed(p):
     global out_of_water
     global desired_moisture_level
@@ -54,6 +64,7 @@ def right_button_pushed(p):
         if desired_moisture_level > MAX_MOISTURE:
             desired_moisture_level = MAX_MOISTURE
 
+        write_moisture_level(desired_moisture_level)
 
 water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
 left_button.irq(trigger=Pin.IRQ_FALLING, handler=left_button_pushed)
@@ -66,6 +77,11 @@ def calculate_moisture_level(input_level):
     level = 1.0 - (numerator * 1.0)/denominator
 
     return level
+
+def write_moisture_level(level):
+    f = open(FILE_NAME, 'w')
+    f.write(str(level))
+    f.close()
 
 def start_pump():
     global pump_on
