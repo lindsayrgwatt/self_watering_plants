@@ -123,13 +123,15 @@ def update_screen(variables=None):
         lcd.text(third_line,0,20,1)
     elif out_of_water:
         lcd.text("Out Of Water",0,0,1) # Doesn’t support newline characters
-        lcd.text("Fill Tank",0,10,1)
-        lcd.text("Then Hold Any Button",0,20,1)
+        lcd.text("Fill Tank & Then",0,10,1)
+        lcd.text("Hold Any Button",0,20,1)
     else:
         lcd.text("Soil moisture",0,0,1) # Doesn’t support newline characters
-        second_line = "Desired: % 1.2f%%" % variables[0]
+        desired = 100 * variables[0]
+        second_line = "Desired: % 1.f%%" % desired
         lcd.text(second_line,0,10,1)
-        third_line = "Actual: % 1.2f%%" % variables[1]
+        actual = 100 * variables[1]
+        third_line = "Actual:  % 1.f%%" % actual
         lcd.text(third_line,0,20,1)
     lcd.show()
 
