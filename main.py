@@ -28,12 +28,12 @@ pump_on = False
 debug = True
 
 # Set up pins
-adc = ADC(Pin.board.Y12) # Moisuture sensor used ADC to get value
-lcd = LCD('X')
-water_monitor = Pin('Y1', Pin.IN)
-pump = Pin('Y2', Pin.OUT)
-left_button = Pin('Y3', Pin.IN, Pin.PULL_UP)
-right_button = Pin('Y4', Pin.IN, Pin.PULL_UP)
+adc = ADC(Pin.board.X8) # Moisuture sensor used ADC to get value
+lcd = LCD('Y')
+water_monitor = Pin('X10', Pin.IN)
+pump = Pin('X12', Pin.OUT)
+left_button = Pin('X11', Pin.IN, Pin.PULL_UP)
+right_button = Pin('X1', Pin.IN, Pin.PULL_UP)
 
 lcd.light(True)
 
