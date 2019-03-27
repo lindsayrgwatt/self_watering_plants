@@ -5,7 +5,7 @@ from pyb import ADC, I2C, LCD, Pin
 DRY_DIRT = 3163 # Determined by experimenting with the moisture sensor
 SOAKING_DIRT = 1630 # Determined by experimenting with the moisture sensor
 DELAY = 1
-DELTA = 1
+DELTA = 10
 INCREMENT = 0.05
 MAX_MOISTURE = 1.0
 MIN_MOISTURE = 0.0
@@ -18,9 +18,12 @@ water_flow_counter = 0
 try:
     f = open(FILE_NAME, 'r')
     desired_moisture_level = float(f.read()[0:4])
-    f.close()
 except OSError:
     print('No file to open')
+except ValueError:
+    print('Invalid moisture level data')
+finally:
+    f.close()
 
 # State variables
 out_of_water = False
