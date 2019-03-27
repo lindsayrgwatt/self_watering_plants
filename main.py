@@ -7,7 +7,7 @@ SOAKING_DIRT = 1630 # Determined by experimenting with the moisture sensor
 DELAY = 1
 DELTA = 10
 INCREMENT = 0.05
-MAX_MOISTURE = 1.0
+MAX_MOISTURE = 0.7 # If lower than 1.0, system will shut off if bouncing pushes moisture level up
 MIN_MOISTURE = 0.0
 FILE_NAME = 'data.txt'
 
