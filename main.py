@@ -1,15 +1,21 @@
 import time
-from pyb import ADC, I2C, LCD, Pin
+import micropython
+import machine
+from pyb import ADC, I2C, LCD, Pin, delay
+
+micropython.alloc_emergency_exception_buf(100)
 
 # Following values were obtained by experimenting with the moisture sensor
 DRY_DIRT = 3163 # Determined by experimenting with the moisture sensor
 SOAKING_DIRT = 1630 # Determined by experimenting with the moisture sensor
 DELAY = 1
-DELTA = 10
+DELTA = 100 # Determined by experimenting
 INCREMENT = 0.05
 MAX_MOISTURE = 0.7 # If lower than 1.0, system will shut off if bouncing pushes moisture level up
 MIN_MOISTURE = 0.0
 FILE_NAME = 'data.txt'
+LEFT = 'left'
+RIGHT = 'right'
 
 desired_moisture_level = 0.25
 moisture_level = -1.0
@@ -31,11 +37,11 @@ pump_on = False
 debug = True
 
 # Set up pins
-adc = ADC(Pin.board.X8) # Moisuture sensor used ADC to get value
+adc = ADC(Pin.board.X8) # Moisuture sensor uses ADC to get value
 lcd = LCD('Y')
 water_monitor = Pin('X10', Pin.IN)
 pump = Pin('X12', Pin.OUT)
-left_button = Pin('X11', Pin.IN, Pin.PULL_UP)
+left_button = Pin('X6', Pin.IN, Pin.PULL_UP)
 right_button = Pin('X1', Pin.IN, Pin.PULL_UP)
 
 lcd.light(True)
@@ -45,29 +51,30 @@ def water_incrementer(p):
     global water_flow_counter
     water_flow_counter += 1
 
-def left_button_pushed(p):
+def button_pushed(button):
     global out_of_water
     global desired_moisture_level
     if out_of_water:
         out_of_water = False
-    else:
-        desired_moisture_level -= INCREMENT
-        if desired_moisture_level < MIN_MOISTURE:
-            desired_moisture_level = MIN_MOISTURE
-
-        write_moisture_level(desired_moisture_level)
-
-def right_button_pushed(p):
-    global out_of_water
-    global desired_moisture_level
-    if out_of_water:
-        out_of_water = False
-    else:
+    elif button == RIGHT:
         desired_moisture_level += INCREMENT
         if desired_moisture_level > MAX_MOISTURE:
             desired_moisture_level = MAX_MOISTURE
-
         write_moisture_level(desired_moisture_level)
+    elif button == LEFT:
+        desired_moisture_level -= INCREMENT
+        if desired_moisture_level < MIN_MOISTURE:
+            desired_moisture_level = MIN_MOISTURE
+        write_moisture_level(desired_moisture_level)
+
+
+def left_button_pushed(p):
+    button_pushed(LEFT)
+    print("Left button pushed")
+
+def right_button_pushed(p):
+    button_pushed(RIGHT)
+    print("Right button pushed")
 
 water_monitor.irq(trigger=Pin.IRQ_RISING, handler=water_incrementer)
 left_button.irq(trigger=Pin.IRQ_FALLING, handler=left_button_pushed)
@@ -140,8 +147,16 @@ def update_screen(variables=None):
 
 
 # Main program loop
+counter = 0
 while True:
+    if debug:
+        print(counter)
+        print("pause for a second")
+        time.sleep(DELAY)
+        counter += 1
     if out_of_water:
+        if debug:
+            print("out of water")
         update_screen()
     else:
         raw_moisture_value = adc.read()
@@ -152,9 +167,16 @@ while True:
         else:
             update_screen([desired_moisture_level, moisture_level])
 
-        if moisture_level <= desired_moisture_level and not pump_on:
-            start_pump()
-        elif moisture_level <= desired_moisture_level and pump_on:
-            check_for_water()
-        elif moisture_level > desired_moisture_level and pump_on:
+        if moisture_level <= desired_moisture_level:
+            if pump_on:
+                if debug:
+                    print("check_for_water")
+                check_for_water()
+            elif not out_of_water:
+                if debug:
+                    print("start_pump")
+                start_pump()
+        else:
+            if debug:
+                print("stop_pump")
             stop_pump()
